@@ -1,0 +1,42 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
+.DS_Store
+
+# Data files can be large or refreshed over time
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+reports/figures/*.png
+reports/figures/*.html
+
+# Python environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Data files generated locally
+data/raw/*
+data/interim/*
+data/processed/*.csv
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+# Local OS/editor files
+.DS_Store
+.vscode/
+.idea/
