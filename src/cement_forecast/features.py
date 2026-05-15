@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 
@@ -7,12 +8,17 @@ def add_calendar_features(df: pd.DataFrame, date_col: str = "date") -> pd.DataFr
     """Add deterministic calendar features for monthly forecasting."""
     out = df.copy()
     dates = pd.to_datetime(out[date_col])
-    out["year"] = dates.dt.year
-    out["month"] = dates.dt.month
-    out["quarter"] = dates.dt.quarter
-    out["month_sin"] = __import__("numpy").sin(2 * __import__("numpy").pi * out["month"] / 12)
-    out["month_cos"] = __import__("numpy").cos(2 * __import__("numpy").pi * out["month"] / 12)
-    return out
+    calendar = pd.DataFrame(
+        {
+            "year": dates.dt.year,
+            "month": dates.dt.month,
+            "quarter": dates.dt.quarter,
+            "month_sin": np.sin(2 * np.pi * dates.dt.month / 12),
+            "month_cos": np.cos(2 * np.pi * dates.dt.month / 12),
+        },
+        index=out.index,
+    )
+    return pd.concat([out, calendar], axis=1)
 
 
 def add_lag_features(
@@ -23,10 +29,14 @@ def add_lag_features(
 ) -> pd.DataFrame:
     """Add lagged versions of selected columns."""
     out = df.sort_values(sort_col).copy()
-    for column in columns:
-        for lag in lags:
-            out[f"{column}_lag_{lag}"] = out[column].shift(lag)
-    return out
+    lagged = {
+        f"{column}_lag_{lag}": out[column].shift(lag)
+        for column in columns
+        for lag in lags
+    }
+    if not lagged:
+        return out
+    return pd.concat([out, pd.DataFrame(lagged, index=out.index)], axis=1)
 
 
 def add_rolling_features(
@@ -35,14 +45,17 @@ def add_rolling_features(
     windows: list[int],
     sort_col: str = "date",
 ) -> pd.DataFrame:
-    """Add rolling mean features using only past observations."""
+    """Add rolling mean and standard-deviation features using only past observations."""
     out = df.sort_values(sort_col).copy()
+    rolling = {}
     for column in columns:
         shifted = out[column].shift(1)
         for window in windows:
-            out[f"{column}_roll_mean_{window}"] = shifted.rolling(window=window).mean()
-            out[f"{column}_roll_std_{window}"] = shifted.rolling(window=window).std()
-    return out
+            rolling[f"{column}_roll_mean_{window}"] = shifted.rolling(window=window).mean()
+            rolling[f"{column}_roll_std_{window}"] = shifted.rolling(window=window).std()
+    if not rolling:
+        return out
+    return pd.concat([out, pd.DataFrame(rolling, index=out.index)], axis=1)
 
 
 def make_supervised_monthly_dataset(
