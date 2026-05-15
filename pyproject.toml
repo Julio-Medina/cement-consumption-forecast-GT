@@ -1,0 +1,13 @@
+[project]
+name = "cement-forecast-guatemala"
+version = "0.1.0"
+description = "Forecasting cement demand and construction activity in Guatemala using public data."
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "scripts", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

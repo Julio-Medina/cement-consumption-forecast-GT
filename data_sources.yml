@@ -1,0 +1,45 @@
+sources:
+  banguat_trade_by_product:
+    name: "Banco de Guatemala - Exportaciones e importaciones mensuales por producto"
+    page_url: "https://banguat.gob.gt/page/exportaciones-e-importaciones-mensuales-por-producto"
+    download_url: "https://banguat.gob.gt/sites/default/files/banguat/estaeco/comercio/por_producto/prod_mens.xlsx"
+    destination: "data/raw/banguat_prod_mens.xlsx"
+    type: "xlsx"
+    frequency: "monthly"
+    role: "possible target or predictor"
+
+  ine_ipmc:
+    name: "INE Guatemala - Histórico IPMC"
+    page_url: "https://www.ine.gob.gt/indice-de-materiales-de-construccion/"
+    download_url: "https://www.ine.gob.gt/wp-content/uploads/2026/04/HISTORICO-MARZO-2026.xlsx"
+    destination: "data/raw/ine_ipmc_historico.xlsx"
+    type: "xlsx"
+    frequency: "monthly"
+    role: "construction material price indicators"
+
+  ine_construcciones_particulares_gt:
+    name: "INE Datos Abiertos - Construcciones particulares departamento de Guatemala"
+    page_url: "https://datos.ine.gob.gt/dataset/construcciones-particulares-nivel-departamental/resource/aae2a8a8-2643-42bc-b5ae-67cc5613b1dd"
+    download_url: "https://datos.ine.gob.gt/dataset/cc9e7fa8-334f-4fe3-8bb2-e0d5fa826206/resource/aae2a8a8-2643-42bc-b5ae-67cc5613b1dd/download/bd-construcciones-particulares-departamento-de-guatemala.xlsx"
+    destination: "data/raw/ine_construcciones_particulares_gt.xlsx"
+    type: "xlsx"
+    frequency: "quarterly"
+    role: "construction activity target or predictor"
+
+  banguat_remittances:
+    name: "Banco de Guatemala - Remesas familiares"
+    page_url: "https://banguat.gob.gt/page/remesas-familiares-0"
+    download_url: "https://banguat.gob.gt/sites/default/files/banguat/estaeco/remesas/remfam2010_2021.xls"
+    destination: "data/raw/banguat_remesas.xls"
+    type: "xls"
+    frequency: "monthly"
+    role: "macroeconomic predictor"
+
+  banguat_exchange_rate_service:
+    name: "Banco de Guatemala - TipoCambio Web Service"
+    page_url: "https://www.banguat.gob.gt/variables/ws/tipocambio.asmx"
+    download_url: null
+    destination: "data/raw/banguat_exchange_rate.csv"
+    type: "web_service"
+    frequency: "daily"
+    role: "macroeconomic predictor"
