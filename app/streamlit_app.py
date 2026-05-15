@@ -11,10 +11,10 @@ st.set_page_config(page_title="Guatemala Cement Demand Forecast", layout="wide")
 st.title("Forecasting Cement Demand and Construction Activity in Guatemala")
 st.caption("Portfolio project: public-data forecasting, macroeconomic indicators, and construction-sector analytics.")
 
-sample_path = Path("data/processed/sample_modeling_dataset.csv")
+sample_path = Path("data/processed/modeling_dataset.csv")
 
 if not sample_path.exists():
-    st.warning("No sample dataset found. Run `python scripts/make_sample_dataset.py` first.")
+    st.warning("No modeling dataset found. Run the build_modeling_dataset.py script first.")
     st.stop()
 
 df = pd.read_csv(sample_path, parse_dates=["date"])
@@ -30,6 +30,7 @@ st.dataframe(df.tail(12), use_container_width=True)
 
 st.subheader("Project note")
 st.write(
-    "This first dashboard uses a synthetic development dataset. The next milestone is to replace it "
-    "with the official public data sources documented in docs/DATA_SOURCES.md."
+    "This dashboard uses a public-data proxy for cement-related construction/material demand in Guatemala. "
+    "The target is built from official public indicators and should be interpreted as a proxy, not as private "
+    "industry cement consumption."
 )
