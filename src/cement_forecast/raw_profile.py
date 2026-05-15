@@ -1,0 +1,142 @@
+from __future__ import annotations
+
+from dataclasses import asdict
+from pathlib import Path
+
+import pandas as pd
+
+from cement_forecast.cleaning import normalize_column_name
+from cement_forecast.parsers.common import SpreadsheetCandidate, coerce_numeric_series
+
+EXCEL_SUFFIXES = {".xls", ".xlsx", ".xlsm"}
+CSV_SUFFIXES = {".csv", ".txt"}
+
+DATE_PATTERNS = ("fecha", "date", "ano", "anio", "year", "mes", "month", "periodo")
+
+
+def _looks_numeric(series: pd.Series) -> bool:
+    coerced = coerce_numeric_series(series)
+    return coerced.notna().mean() >= 0.5 if len(series) else False
+
+
+def _candidate_from_frame(
+    path: Path,
+    sheet_name: str,
+    header_row: int,
+    df: pd.DataFrame,
+) -> SpreadsheetCandidate:
+    normalized_columns = [normalize_column_name(column) for column in df.columns]
+    date_like = [
+        column for column in normalized_columns if any(pattern in column for pattern in DATE_PATTERNS)
+    ]
+    numeric_like = []
+    for column in df.columns:
+        if _looks_numeric(df[column]):
+            numeric_like.append(normalize_column_name(column))
+    return SpreadsheetCandidate(
+        path=path,
+        sheet_name=sheet_name,
+        header_row=header_row,
+        rows=len(df),
+        columns=len(df.columns),
+        column_names=normalized_columns,
+        date_like_columns=date_like,
+        numeric_like_columns=numeric_like,
+    )
+
+
+def profile_excel_file(path: Path, max_header_rows: int = 12) -> list[SpreadsheetCandidate]:
+    """Profile possible tabular regions in an Excel file.
+
+    Government spreadsheets often have title rows and footnotes. This scans several
+    possible header rows and records the candidates that appear to contain useful tables.
+    """
+    candidates: list[SpreadsheetCandidate] = []
+    workbook = pd.ExcelFile(path)
+    for sheet_name in workbook.sheet_names:
+        for header_row in range(max_header_rows):
+            try:
+                df = pd.read_excel(path, sheet_name=sheet_name, header=header_row, nrows=80)
+            except Exception:
+                continue
+            df = df.dropna(axis=1, how="all").dropna(axis=0, how="all")
+            if df.empty or len(df.columns) < 2:
+                continue
+            candidate = _candidate_from_frame(path, sheet_name, header_row, df)
+            if candidate.date_like_columns or len(candidate.numeric_like_columns) >= 2:
+                candidates.append(candidate)
+    return candidates
+
+
+def profile_csv_file(path: Path) -> list[SpreadsheetCandidate]:
+    candidates: list[SpreadsheetCandidate] = []
+    for sep in [",", ";", "\t", "|"]:
+        try:
+            df = pd.read_csv(path, sep=sep, nrows=80)
+        except Exception:
+            continue
+        df = df.dropna(axis=1, how="all").dropna(axis=0, how="all")
+        if df.empty or len(df.columns) < 2:
+            continue
+        candidate = _candidate_from_frame(path, "csv", 0, df)
+        if candidate.date_like_columns or len(candidate.numeric_like_columns) >= 2:
+            candidates.append(candidate)
+    return candidates[:1]
+
+
+def profile_raw_directory(raw_dir: Path) -> list[SpreadsheetCandidate]:
+    """Profile all supported raw files in a directory."""
+    raw_dir = Path(raw_dir)
+    candidates: list[SpreadsheetCandidate] = []
+    for path in sorted(raw_dir.iterdir() if raw_dir.exists() else []):
+        if path.name.startswith(".") or path.is_dir():
+            continue
+        if path.suffix.lower() in EXCEL_SUFFIXES:
+            candidates.extend(profile_excel_file(path))
+        elif path.suffix.lower() in CSV_SUFFIXES:
+            candidates.extend(profile_csv_file(path))
+    return candidates
+
+
+def candidates_to_dataframe(candidates: list[SpreadsheetCandidate]) -> pd.DataFrame:
+    """Convert candidates to a readable dataframe."""
+    rows = []
+    for candidate in candidates:
+        row = asdict(candidate)
+        row["path"] = str(candidate.path)
+        row["column_names"] = ", ".join(candidate.column_names[:20])
+        row["date_like_columns"] = ", ".join(candidate.date_like_columns)
+        row["numeric_like_columns"] = ", ".join(candidate.numeric_like_columns[:20])
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def write_markdown_inventory(candidates: list[SpreadsheetCandidate], output_path: Path) -> None:
+    """Write a Markdown raw-data inventory for reports or GitHub review."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df = candidates_to_dataframe(candidates)
+    if df.empty:
+        output_path.write_text(
+            "# Raw Data Inventory\n\nNo supported raw files were found or no table-like regions were detected.\n",
+            encoding="utf-8",
+        )
+        return
+
+    columns = [
+        "path",
+        "sheet_name",
+        "header_row",
+        "rows",
+        "columns",
+        "date_like_columns",
+        "numeric_like_columns",
+    ]
+    markdown = "# Raw Data Inventory\n\n"
+    markdown += (
+        "This file is generated by `scripts/profile_raw_data.py`. It helps identify the "
+        "sheet names, likely header rows, date columns, and numeric columns inside the raw "
+        "official files before writing parsers.\n\n"
+    )
+    markdown += df[columns].to_markdown(index=False)
+    markdown += "\n"
+    output_path.write_text(markdown, encoding="utf-8")

@@ -62,6 +62,22 @@ Run tests:
 pytest -q
 ```
 
+Profile raw official files after downloading or manually placing files in `data/raw`:
+
+```bash
+python scripts/profile_raw_data.py
+```
+
+This creates `reports/raw_data_inventory.md`, which helps identify sheet names, likely header rows, date columns, and numeric columns before writing source-specific parsers.
+
+Build a real modeling dataset once the correct sheet/header combinations are known:
+
+```bash
+python scripts/build_modeling_dataset.py \
+  --source ine_ipmc:data/raw/<ipmc_file.xlsx>:<sheet_name_or_index>:<header_row> \
+  --source banguat_remittances:data/raw/<remittances_file.xlsx>:<sheet_name_or_index>:<header_row>
+```
+
 Generate a sample dataset so the pipeline can run immediately:
 
 ```bash
@@ -93,16 +109,23 @@ streamlit run app/streamlit_app.py
 
 ### Version 0.2
 
-- Download and clean real public data.
-- Build monthly modeling table.
-- Add SARIMAX and tree-based models.
-- Add walk-forward validation.
+- Add raw-data profiling for messy official Excel/CSV files.
+- Add parser scaffolding for Banguat and INE sources.
+- Add a reproducible `build_modeling_dataset.py` script.
+- Build a transparent `cement_demand_proxy` from available public indicators.
 
 ### Version 0.3
 
+- Finalize source-specific parsers after inspecting official files.
+- Build the first real monthly modeling table.
+- Add SARIMAX and tree-based models.
+- Add walk-forward validation.
+
+### Version 0.4
+
 - Add XGBoost/LightGBM if useful.
 - Add feature importance / SHAP.
-- Add Streamlit dashboard.
+- Improve Streamlit dashboard with real data.
 - Produce final technical report.
 
 ## Ethical and methodological note
