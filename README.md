@@ -1,38 +1,53 @@
-# Forecasting Cement Demand and Construction Activity in Guatemala
+# Forecasting Cement Trade and Construction Activity in Guatemala
 
-This project builds an end-to-end forecasting system for cement demand / construction activity in Guatemala using public economic indicators.
+This repository is a professional data science portfolio project focused on **public-data forecasting for Guatemala's cement-related trade flows and construction activity**.
 
-The project is designed as a professional data science portfolio repository: it includes data ingestion, cleaning, feature engineering, baseline and machine-learning forecasting models, evaluation, explainability, and an optional dashboard.
+The project is intentionally framed around observable public targets rather than confidential industry sales data. The main forecast targets are designed to include:
+
+- cement import tons;
+- cement export tons;
+- net cement import tons;
+- cement import/export value;
+- construction area in square meters;
+- construction cost in quetzales;
+- number of private constructions;
+- IMAE construction/economic activity indices when added.
+
+A legacy `cement_demand_proxy` can still be built as a transparent fallback index, but it is **not** treated as actual physical domestic cement consumption.
 
 ## Business problem
 
-Cement consumption is closely related to construction, housing, infrastructure, remittances, credit, exchange rates, and construction-material costs. Exact monthly cement-consumption data may not be public, so the first version of this project uses a transparent public-data strategy:
+Cement demand is linked to construction, housing, infrastructure, remittances, credit, exchange rates, imports/exports, and construction-material costs. However, a free public monthly series for actual physical cement consumption in Guatemala is not currently available in this project.
 
-1. Use cement-related import/export/product data where available.
-2. Use INE construction-material price indices, including cement/concrete-related materials, as cost-pressure signals.
-3. Use construction-permit style data such as number of constructions, area in square meters, and approximate construction cost.
-4. Use macroeconomic predictors such as remittances, exchange rate, inflation, and economic activity.
-5. Build a forecasting target named `cement_demand_proxy` when direct consumption is not available.
+Therefore, the project focuses on targets that can be defended publicly:
+
+1. **Cement trade quantities and values** from trade sources such as Banguat, WITS, or UN Comtrade.
+2. **Construction activity indicators** from INE, such as construction area, approximate cost, and number of constructions.
+3. **Macroeconomic activity indicators** such as IMAE, remittances, and exchange rate.
+4. **Construction-material price indices** such as INE IPMC cement/concrete-related materials.
 
 ## Portfolio objective
 
 The final project should answer:
 
-> Can we forecast short-term cement demand / construction activity in Guatemala using macroeconomic and construction-sector indicators?
+> Can we forecast cement-related trade flows and construction activity in Guatemala using public trade, construction, and macroeconomic indicators?
+
+This is a stronger and more defensible portfolio framing than claiming direct access to private cement-consumption data.
 
 ## Core data sources
 
 See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) and [`data_sources.yml`](data_sources.yml).
 
-Planned sources include:
+Planned and/or parsed sources include:
 
 - Banco de Guatemala: monthly exports/imports by product.
 - Banco de Guatemala: remittances.
 - Banco de Guatemala: exchange-rate web service.
+- Banco de Guatemala: IMAE and economic activity indicators.
 - INE Guatemala: Índice de Precios de Materiales de Construcción, IPMC.
 - INE Guatemala open-data portal: construcciones particulares.
+- Optional: WITS / UN Comtrade cement HS-code trade quantities.
 - Optional: World Bank indicators.
-- Optional: Google Trends terms such as `cemento`, `construcción`, `vivienda`.
 
 ## Repository structure
 
@@ -62,6 +77,8 @@ Run tests:
 pytest -q
 ```
 
+## Data workflow
+
 Profile raw official files after downloading or manually placing files in `data/raw`:
 
 ```bash
@@ -74,21 +91,48 @@ Build a real modeling dataset once the correct sheet/header combinations are kno
 
 ```bash
 python scripts/build_modeling_dataset.py \
-  --source ine_ipmc:data/raw/<ipmc_file.xlsx>:<sheet_name_or_index>:<header_row> \
-  --source banguat_remittances:data/raw/<remittances_file.xlsx>:<sheet_name_or_index>:<header_row>
+  --source 'banguat_remittances:data/raw/banguat_remesas.xls:2002-2021:9' \
+  --source 'ine_construction:data/raw/ine_construcciones_particulares_gt.xlsx:Hoja1:0' \
+  --source 'ine_ipmc:data/raw/ine_ipmc_historico.xlsx:Publicación Histórico 2026:0' \
+  --drop-missing-target
 ```
 
-Generate a sample dataset so the pipeline can run immediately:
+If you want a dataset with only observable parsed series and no legacy proxy target, use:
+
+```bash
+python scripts/build_modeling_dataset.py \
+  --source 'banguat_remittances:data/raw/banguat_remesas.xls:2002-2021:9' \
+  --source 'ine_construction:data/raw/ine_construcciones_particulares_gt.xlsx:Hoja1:0' \
+  --source 'ine_ipmc:data/raw/ine_ipmc_historico.xlsx:Publicación Histórico 2026:0' \
+  --skip-proxy-target
+```
+
+Generate a synthetic sample dataset so the pipeline can run immediately:
 
 ```bash
 python scripts/make_sample_dataset.py
 ```
 
-Train baseline models:
+## Modeling examples
+
+Train baseline models for the legacy proxy:
 
 ```bash
-python scripts/train_baseline.py --data data/processed/sample_modeling_dataset.csv
+python scripts/train_baseline.py \
+  --data data/processed/modeling_dataset.csv \
+  --target cement_demand_proxy
 ```
+
+Train baseline models for a direct construction activity target:
+
+```bash
+python scripts/train_baseline.py \
+  --data data/processed/modeling_dataset.csv \
+  --target construction_area_m2 \
+  --test-size 3
+```
+
+Use a smaller `--test-size` when a target has few observations, such as quarterly construction data converted to monthly values.
 
 Launch dashboard:
 
@@ -112,22 +156,27 @@ streamlit run app/streamlit_app.py
 - Add raw-data profiling for messy official Excel/CSV files.
 - Add parser scaffolding for Banguat and INE sources.
 - Add a reproducible `build_modeling_dataset.py` script.
-- Build a transparent `cement_demand_proxy` from available public indicators.
 
 ### Version 0.3
 
 - Finalize source-specific parsers after inspecting official files.
 - Build the first real monthly modeling table.
-- Add SARIMAX and tree-based models.
-- Add walk-forward validation.
 
 ### Version 0.4
 
-- Add XGBoost/LightGBM if useful.
+- Improve target quality and avoid extrapolating proxy values into missing periods.
+
+### Version 0.5+
+
+- Add target-specific modeling for cement trade, construction activity, and IMAE.
+- Parse cement import/export quantities from WITS/Comtrade or another quantity source.
+- Parse Banguat product-level trade values.
+- Add SARIMAX and tree-based models.
+- Add walk-forward validation.
 - Add feature importance / SHAP.
-- Improve Streamlit dashboard with real data.
+- Improve Streamlit dashboard with real target selection.
 - Produce final technical report.
 
 ## Ethical and methodological note
 
-This project is not claiming access to confidential cement-sales data. When direct cement-consumption data is unavailable, the target is explicitly modeled as a public-data proxy. This is intentional and transparent.
+This project is not claiming access to confidential cement-sales data. When direct domestic cement-consumption data is unavailable, the project forecasts observable public targets such as cement trade, construction area, construction cost, and activity indices. Any proxy target is explicitly documented as a proxy, not as measured physical cement consumption.

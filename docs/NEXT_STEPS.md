@@ -2,29 +2,86 @@
 
 ## Current status
 
-The repository currently has a working end-to-end development pipeline using a synthetic monthly dataset. The next task is to convert official Banguat and INE files into standardized monthly tables.
+The repository has a working parser and modeling pipeline for initial public sources:
 
-## Version 0.2 target
+- Banguat remittances;
+- INE private construction indicators;
+- INE IPMC construction-material indices.
 
-1. Place official downloaded files in `data/raw/`.
-2. Run:
+The project is now reframed around **observable public targets** rather than a single `cement_demand_proxy`.
 
-   ```bash
-   python scripts/profile_raw_data.py
-   ```
+## Recommended target hierarchy
 
-3. Review `reports/raw_data_inventory.md`.
-4. Identify the best `sheet_name` and `header_row` for each source.
-5. Build the first real modeling dataset with:
+Prioritize targets in this order:
 
-   ```bash
-   python scripts/build_modeling_dataset.py \
-     --source ine_ipmc:data/raw/<ipmc_file.xlsx>:<sheet_name_or_index>:<header_row> \
-     --source banguat_remittances:data/raw/<remittances_file.xlsx>:<sheet_name_or_index>:<header_row>
-   ```
+1. `cement_import_tons`
+2. `cement_export_tons`
+3. `net_cement_import_tons`
+4. `cement_import_value_usd`
+5. `cement_export_value_usd`
+6. `construction_area_m2`
+7. `construction_cost_gtq`
+8. `construction_num_constructions`
+9. `imae_construction_index`
+10. `cement_demand_proxy` as a documented fallback only
 
-## Parser strategy
+## Immediate development target
 
-The first parser layer is intentionally generic. Official files often contain title rows, merged headers, blank rows, and footnotes. Instead of hardcoding assumptions too early, the project now has a profiling script that helps us find the true tabular region.
+The next useful version should add at least one stronger cement-specific target:
 
-Once we know the real workbook structures, we should replace the generic calls with source-specific parser functions that encode the exact sheet names, header rows, and required columns.
+```text
+cement_import_tons
+cement_export_tons
+net_cement_import_tons
+```
+
+The cleanest way is to obtain cement HS-code quantity data from WITS or UN Comtrade and convert kilograms to tons.
+
+Useful HS codes:
+
+```text
+2523      Hydraulic cement group
+252310    Cement clinkers
+252321    White Portland cement
+252329    Portland cement, except white
+252330    Aluminous cement
+252390    Other hydraulic cements
+```
+
+## Banguat product parser
+
+The Banguat monthly product file should still be parsed, but it is likely more useful for trade **values** than tons:
+
+```text
+cement_import_value_usd
+cement_export_value_usd
+net_cement_import_value_usd
+```
+
+The file has a multi-row export/import header structure, so this parser should be developed carefully with tests based on extracted rows.
+
+## IMAE parser
+
+Add Banguat IMAE data when available:
+
+```text
+imae_general_index
+imae_construction_index
+imae_general_yoy
+imae_construction_yoy
+```
+
+These can be used as either targets or predictors, depending on the modeling question.
+
+## Dashboard roadmap
+
+The dashboard should let the user select a forecast target from the available columns instead of assuming a single target.
+
+Minimum dashboard requirements:
+
+- target selector;
+- data coverage summary;
+- latest values table;
+- line chart;
+- model comparison when forecast outputs are available;
+- methodological note explaining that the project does not claim access to confidential cement consumption data.

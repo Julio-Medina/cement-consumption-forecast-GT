@@ -84,6 +84,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Drop rows where the proxy target could not be computed from observed indicators.",
     )
+    parser.add_argument(
+        "--skip-proxy-target",
+        action="store_true",
+        help="Do not build the legacy cement_demand_proxy column; keep only observable parsed targets and predictors.",
+    )
     return parser.parse_args()
 
 
@@ -109,13 +114,18 @@ def main() -> None:
         frames.append(frame)
 
     merged = merge_monthly_frames(frames)
-    modeled = build_proxy_target(
-        merged,
-        min_observed_indicators=args.min_target_indicators,
-        interpolate_inside_gaps=args.interpolate_inside_gaps,
-    )
-    if args.drop_missing_target:
-        modeled = keep_rows_with_target(modeled)
+    if args.skip_proxy_target:
+        modeled = merged
+        if args.drop_missing_target:
+            raise SystemExit("--drop-missing-target requires proxy target creation; remove --skip-proxy-target or choose a target-specific training command later.")
+    else:
+        modeled = build_proxy_target(
+            merged,
+            min_observed_indicators=args.min_target_indicators,
+            interpolate_inside_gaps=args.interpolate_inside_gaps,
+        )
+        if args.drop_missing_target:
+            modeled = keep_rows_with_target(modeled)
     save_dataset(modeled, args.output)
     print(f"Saved modeling dataset to {args.output} with shape {modeled.shape}")
 

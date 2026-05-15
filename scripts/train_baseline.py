@@ -14,6 +14,7 @@ import pandas as pd
 from cement_forecast.config import TARGET_COLUMN
 from cement_forecast.evaluation import regression_report, temporal_train_test_split
 from cement_forecast.models import MovingAverageForecaster, NaiveForecaster, SeasonalNaiveForecaster
+from cement_forecast.targets import validate_target_column
 
 
 def main() -> None:
@@ -24,6 +25,7 @@ def main() -> None:
     args = parser.parse_args()
 
     df = pd.read_csv(args.data, parse_dates=["date"])
+    validate_target_column(df, args.target, min_observations=args.test_size + 1)
     before = len(df)
     df = df.dropna(subset=[args.target]).reset_index(drop=True)
     dropped = before - len(df)
