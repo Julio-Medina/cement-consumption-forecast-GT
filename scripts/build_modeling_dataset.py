@@ -12,7 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import pandas as pd
 
 from cement_forecast.config import PROCESSED_DATA_DIR
-from cement_forecast.dataset import build_proxy_target, merge_monthly_frames, save_dataset
+from cement_forecast.dataset import build_proxy_target, keep_rows_with_target, merge_monthly_frames, save_dataset
 from cement_forecast.parsers.official import (
     parse_banguat_remittances,
     parse_banguat_trade_by_product,
@@ -68,6 +68,22 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=PROCESSED_DATA_DIR / "modeling_dataset.csv",
     )
+    parser.add_argument(
+        "--min-target-indicators",
+        type=int,
+        default=1,
+        help="Minimum number of observed cement/construction indicators required to compute the proxy target.",
+    )
+    parser.add_argument(
+        "--interpolate-inside-gaps",
+        action="store_true",
+        help="Interpolate only internal gaps within each target-component series; never extrapolate outside observed ranges.",
+    )
+    parser.add_argument(
+        "--drop-missing-target",
+        action="store_true",
+        help="Drop rows where the proxy target could not be computed from observed indicators.",
+    )
     return parser.parse_args()
 
 
@@ -93,7 +109,13 @@ def main() -> None:
         frames.append(frame)
 
     merged = merge_monthly_frames(frames)
-    modeled = build_proxy_target(merged)
+    modeled = build_proxy_target(
+        merged,
+        min_observed_indicators=args.min_target_indicators,
+        interpolate_inside_gaps=args.interpolate_inside_gaps,
+    )
+    if args.drop_missing_target:
+        modeled = keep_rows_with_target(modeled)
     save_dataset(modeled, args.output)
     print(f"Saved modeling dataset to {args.output} with shape {modeled.shape}")
 

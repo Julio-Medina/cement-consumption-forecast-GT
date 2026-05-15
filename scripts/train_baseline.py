@@ -24,6 +24,16 @@ def main() -> None:
     args = parser.parse_args()
 
     df = pd.read_csv(args.data, parse_dates=["date"])
+    before = len(df)
+    df = df.dropna(subset=[args.target]).reset_index(drop=True)
+    dropped = before - len(df)
+    if dropped:
+        print(f"Dropped {dropped} rows with missing target values before training.")
+    if len(df) <= args.test_size:
+        raise SystemExit(
+            f"Not enough target observations ({len(df)}) for test_size={args.test_size}. "
+            "Reduce --test-size or add more target data."
+        )
     train, test = temporal_train_test_split(df, test_size=args.test_size)
 
     y_train = train[args.target]
