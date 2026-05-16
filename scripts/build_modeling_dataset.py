@@ -14,6 +14,7 @@ import pandas as pd
 from cement_forecast.config import PROCESSED_DATA_DIR
 from cement_forecast.dataset import build_proxy_target, keep_rows_with_target, merge_monthly_frames, save_dataset
 from cement_forecast.parsers.official import (
+    parse_banguat_imae,
     parse_banguat_remittances,
     parse_banguat_trade_by_product,
     parse_ine_construction,
@@ -21,6 +22,7 @@ from cement_forecast.parsers.official import (
 )
 
 PARSER_REGISTRY = {
+    "banguat_imae": parse_banguat_imae,
     "banguat_remittances": parse_banguat_remittances,
     "banguat_trade_by_product": parse_banguat_trade_by_product,
     "ine_construction": parse_ine_construction,
