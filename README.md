@@ -1,5 +1,57 @@
 # Forecasting Cement Trade and Construction Activity in Guatemala
 
+<!-- PORTFOLIO_SUMMARY_START -->
+
+## Portfolio summary
+
+**Project:** Forecasting cement-related construction activity in Guatemala using public macroeconomic, construction-material, and economic-activity indicators.
+
+**Main modeling target:** `imae_construction_index` from Banco de Guatemala's IMAE construction activity series.
+
+**Modeling window:** `2019-01-01` to `2025-12-01` using a strict monthly panel with no missing values in the selected modeling columns.
+
+### Why this project matters
+
+This project demonstrates an end-to-end forecasting workflow for a real economic activity indicator related to Guatemala's construction sector. The project originally explored cement demand proxies, but was reframed around observable public targets because a free public monthly series for domestic physical cement consumption was not available.
+
+The current version focuses on forecasting construction-sector activity through Banguat IMAE, while keeping the architecture ready for cement import/export targets when reliable monthly trade quantity or value series are added.
+
+### Current result
+
+| Benchmark | Model | MAE | RMSE |
+|---|---:|---:|---:|
+| Strongest baseline | moving_average_6 | 10.028941 | 11.644662 |
+| Best advanced model | elasticnet_lagged | 5.962085 | 7.660280 |
+
+- RMSE improvement: 34.22%
+- MAE improvement: 40.55%
+
+**RMSE improvement:** 34.22%  
+**MAE improvement:** 40.55%
+
+The best advanced model, `elasticnet_lagged`, improved substantially over the strongest simple baseline. This makes the result more meaningful than simply reporting a machine-learning score without a baseline comparison.
+
+### Project highlights
+
+- Public-data ingestion from Banguat and INE sources.
+- Robust Excel parsing for messy official workbooks.
+- Strict monthly-panel validation from 2019 onward.
+- Baseline forecasting with naïve, seasonal-naïve, and moving-average models.
+- Advanced lagged ML forecasting with regularized regression and tree-based models.
+- Forecast diagnostics: model comparison, actual-vs-predicted plot, residual analysis, and lag-correlation analysis.
+- Portfolio-ready Markdown reports and reproducible scripts.
+
+### Key reports
+
+- `reports/imae_baseline_results.md`
+- `reports/advanced_model_results.md`
+- `reports/forecast_diagnostics_report.md`
+- `docs/MONTHLY_PANEL_CONTRACT.md`
+- `docs/FORECAST_DIAGNOSTICS_WORKFLOW.md`
+
+<!-- PORTFOLIO_SUMMARY_END -->
+
+
 This repository is a professional data science portfolio project focused on **public-data forecasting for Guatemala's cement-related trade flows and construction activity**.
 
 The project is intentionally framed around observable public targets rather than confidential industry sales data. The main forecast targets are designed to include:
